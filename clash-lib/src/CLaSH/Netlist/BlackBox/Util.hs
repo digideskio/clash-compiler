@@ -41,7 +41,8 @@ import           CLaSH.Netlist.BlackBox.Types
 import           CLaSH.Netlist.Types                  (HWType (..), Identifier,
                                                        BlackBoxContext (..),
                                                        SyncExpr, Expr (..),
-                                                       Literal (..), NetlistMonad)
+                                                       Literal (..), NetlistMonad,
+                                                       Modifier (..))
 import           CLaSH.Netlist.Util                   (mkUniqueIdentifier,typeSize)
 import           CLaSH.Util
 
@@ -310,6 +311,7 @@ renderTag b (L n)           = let (s,_,_) = bbInputs b !! n
                               in  (displayT . renderOneLine) <$> expr False (mkLit e)
   where
     mkLit (Literal (Just (Signed _,_)) i) = Literal Nothing i
+    mkLit (DataCon _ (DC (Void, _)) [Literal (Just (Signed _,_)) i]) = Literal Nothing i
     mkLit i                               = i
 
 renderTag _ (Sym t _) = return t

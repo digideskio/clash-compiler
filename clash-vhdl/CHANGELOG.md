@@ -1,5 +1,9 @@
 # Changelog for the [`clash-vhdl`](http://hackage.haskell.org/package/clash-vhdl) package
 
+## 0.7
+* New features:
+  * Support `clash-prelude` 0.11
+
 ## 0.6.11 *April 7th 2016*
 * Fixes bugs:
   * Incorrect primitives for `BitVector`s `quot#` and `rem#`

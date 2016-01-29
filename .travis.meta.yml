@@ -1,7 +1,7 @@
 language: haskell-stack
 
 env:
-  - GHCVER=7.10.3 CABALVER=1.22 STACK_SOLVER=YES
+  - GHCVER=7.10.3 CABALVER=1.22
   - GHCVER=7.10.3 STACK_YAML=stack-lts5.yaml
 
 matrix:

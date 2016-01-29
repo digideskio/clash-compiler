@@ -1,5 +1,9 @@
 # Changelog for the [`clash-ghc`](http://hackage.haskell.org/package/clash-ghc) package
 
+## 0.7
+* New features:
+  * Support for `clash-prelude` 0.11
+
 ## 0.6.17 *April 7th 2016*
 * New features:
   * Up to 2x reduced compilation times when working with large `Vec` literals

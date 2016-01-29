@@ -8,6 +8,6 @@ packages:
 - 'clash-vhdl'
 - 'clash-ghc'
 - 'testsuite'
-
-extra-deps:
-- ghc-typelits-natnormalise-0.4.1
+- location:
+    git: https://github.com/clash-lang/ghc-typelits-natnormalise.git
+    commit: 914cda2d25dc18f8a6d9ce0d88f34fc498085ff9
