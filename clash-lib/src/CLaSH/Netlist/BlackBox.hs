@@ -14,7 +14,6 @@ module CLaSH.Netlist.BlackBox where
 
 import           Control.Lens                  ((.=),(<<%=))
 import qualified Control.Lens                  as Lens
-import           Control.Monad                 (filterM)
 import           Data.Char                     (ord)
 import           Data.Either                   (lefts)
 import qualified Data.HashMap.Lazy             as HashMap
@@ -117,10 +116,8 @@ mkArgument bndr e = do
             (Identifier _ _) -> return ((e',hwTy,False), d)
             _                -> return ((e',hwTy,isConstant e), d)
         (Data dc, args) -> do
-            typeTrans <- Lens.use typeTranslator
-            args' <- filterM (fmap (representableType typeTrans tcm) . termType tcm) (lefts args)
-            (exprN,dcDecls) <- mkDcApplication hwTy (Left bndr) dc args'
-            return ((exprN,hwTy,isConstant e),dcDecls)
+          (exprN,dcDecls) <- mkDcApplication hwTy (Left bndr) dc (lefts args)
+          return ((exprN,hwTy,isConstant e),dcDecls)
         _ -> return ((Identifier "__VOID__" Nothing,hwTy,False),[])
     return ((addClock tcm ty e',t,l),d)
   where
@@ -254,7 +251,7 @@ mkFunInput resId e = do
                       dcAss  = Assignment (pack "~RESULT") dcApp
                   return (Right dcAss)
                 Just resHTy@(Vector _ _) -> do
-                  let dcInps = [ Identifier (pack ("~ARG[" ++ show x ++ "]")) Nothing | x <- [(0::Int)..1] ]
+                  let dcInps = [ Identifier (pack ("~ARG[" ++ show x ++ "]")) Nothing | x <- [(1::Int)..2] ]
                       dcApp  = DataCon resHTy (DC (resHTy,1)) dcInps
                       dcAss  = Assignment (pack "~RESULT") dcApp
                   return (Right dcAss)

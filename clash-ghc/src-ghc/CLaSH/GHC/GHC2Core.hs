@@ -45,18 +45,17 @@ import qualified Unbound.Generics.LocallyNameless     as Unbound
 import Coercion   (coercionType)
 import CoreFVs    (exprSomeFreeVars)
 import CoreSyn    (AltCon (..), Bind (..), CoreExpr,
-                   Expr (..), rhssOfAlts)
+                   Expr (..), Unfolding (..), rhssOfAlts, unfoldingTemplate)
 import DataCon    (DataCon, dataConExTyVars,
                    dataConName, dataConRepArgTys,
                    dataConTag, dataConTyCon,
-                   dataConUnivTyVars, dataConWorkId,
-                   dataConWrapId_maybe)
+                   dataConUnivTyVars, dataConWorkId)
 import DynFlags   (unsafeGlobalDynFlags)
 import FamInstEnv (FamInst (..), FamInstEnvs,
                    familyInstances)
 import FastString (unpackFS)
 import Id         (isDataConId_maybe)
-import IdInfo     (IdDetails (..))
+import IdInfo     (IdDetails (..), unfoldingInfo)
 import Kind       (isSuperKindTyCon)
 import Literal    (Literal (..))
 import Module     (moduleName, moduleNameString)
@@ -81,7 +80,7 @@ import TypeRep    (TyLit (..), Type (..))
 import Unique     (Uniquable (..), Unique, getKey)
 import Var        (Id, TyVar, Var, idDetails,
                    isTyVar, varName, varType,
-                   varUnique)
+                   varUnique, idInfo)
 import VarSet     (isEmptyVarSet)
 
 -- Local imports
@@ -166,7 +165,7 @@ makeTyCon fiEnvs tc = tycon
         mkTupleTyCon = do
           tcName <- coreToName tyConName tyConUnique qualfiedNameString tc
           tcKind <- coreToType (tyConKind tc)
-          tcDc   <- fmap (C.DataTyCon . (:[])) . coreToDataCon False . head . tyConDataCons $ tc
+          tcDc   <- fmap (C.DataTyCon . (:[])) . coreToDataCon . head . tyConDataCons $ tc
           return
             C.AlgTyCon
             { C.tyConName   = tcName
@@ -205,8 +204,8 @@ makeTyCon fiEnvs tc = tycon
 makeAlgTyConRhs :: AlgTyConRhs
                 -> State GHC2CoreState (Maybe C.AlgTyConRhs)
 makeAlgTyConRhs algTcRhs = case algTcRhs of
-  DataTyCon dcs _ -> Just <$> C.DataTyCon <$> mapM (coreToDataCon False) dcs
-  NewTyCon dc _ (rhsTvs,rhsEtad) _ -> Just <$> (C.NewTyCon <$> coreToDataCon False dc
+  DataTyCon dcs _ -> Just <$> C.DataTyCon <$> mapM coreToDataCon dcs
+  NewTyCon dc _ (rhsTvs,rhsEtad) _ -> Just <$> (C.NewTyCon <$> coreToDataCon dc
                                                            <*> ((,) <$> mapM coreToVar rhsTvs
                                                                     <*> coreToType rhsEtad
                                                                )
@@ -266,8 +265,15 @@ coreToTerm primMap unlocs coreExpr = term coreExpr
         xType  <- coreToType (varType x)
         case isDataConId_maybe x of
           Just dc -> case HashMap.lookup xNameS primMap of
-                      Just _  -> return $ C.Prim xNameS xType
-                      Nothing -> C.Data <$> coreToDataCon (isDataConWrapId x && not (isNewTyCon (dataConTyCon dc))) dc
+            Just _  -> return $ C.Prim xNameS xType
+            Nothing -> if isDataConWrapId x && not (isNewTyCon (dataConTyCon dc))
+              then let xInfo = idInfo x
+                       unfolding = unfoldingInfo xInfo
+                   in  case unfolding of
+                          CoreUnfolding {} -> term (unfoldingTemplate unfolding)
+                          NoUnfolding -> error ("No unfolding for DC wrapper: " ++ showPpr unsafeGlobalDynFlags x)
+                          _ -> error ("Unexpected unfolding for DC wrapper: " ++ showPpr unsafeGlobalDynFlags x)
+              else C.Data <$> coreToDataCon dc
           Nothing -> case HashMap.lookup xNameS primMap of
             Just (Primitive f _)
               | f == pack "CLaSH.Signal.Internal.mapSignal#" -> return (mapSignalTerm xType)
@@ -289,7 +295,7 @@ coreToTerm primMap unlocs coreExpr = term coreExpr
     alt (LitAlt l  , _ , e) = bind (C.LitPat . embed $ coreToLiteral l) <$> term e
     alt (DataAlt dc, xs, e) = case span isTyVar xs of
       (tyvs,tmvs) -> bind <$> (C.DataPat . embed <$>
-                                coreToDataCon False dc <*>
+                                coreToDataCon dc <*>
                                 (rebind <$>
                                   mapM coreToTyVar tyvs <*>
                                   mapM coreToId tmvs)) <*>
@@ -310,20 +316,11 @@ coreToTerm primMap unlocs coreExpr = term coreExpr
       MachNullAddr   -> C.StringLiteral []
       MachLabel fs _ _ -> C.StringLiteral (unpackFS fs)
 
-coreToDataCon :: Bool
-              -> DataCon
+coreToDataCon :: DataCon
               -> State GHC2CoreState C.DataCon
-coreToDataCon mkWrap dc = do
+coreToDataCon dc = do
     repTys <- mapM coreToType (dataConRepArgTys dc)
-    dcTy   <- if mkWrap
-                then case dataConWrapId_maybe dc of
-                        Just wrapId -> coreToType (varType wrapId)
-                        Nothing     -> error $ concat [ $(curLoc)
-                                                      , "DataCon Wrapper: "
-                                                      , showPpr unsafeGlobalDynFlags dc
-                                                      , " not found"
-                                                      ]
-                else coreToType (varType $ dataConWorkId dc)
+    dcTy   <- coreToType (varType $ dataConWorkId dc)
     mkDc dcTy repTys
   where
     mkDc dcTy repTys = do
@@ -646,5 +643,5 @@ joinTerm ty = error $ $(curLoc) ++ show ty
 
 isDataConWrapId :: Id -> Bool
 isDataConWrapId v = case idDetails v of
-                      DataConWrapId {} -> True
-                      _                -> False
+  DataConWrapId {} -> True
+  _                -> False
