@@ -25,7 +25,7 @@ executable clash-testsuite
                        deepseq       >=1.4 && <1.5,
                        directory     >=1.2 && <1.3,
                        filepath      >=1.4 && <1.5,
-                       process       >=1.2 && <1.3,
+                       process       >=1.2 && <1.5,
                        tasty         >=0.10.1.2
 
   -- hs-source-dirs:
