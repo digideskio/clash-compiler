@@ -193,7 +193,7 @@ mkEnv ctx = do
   return (gamma',delta)
 
 -- | Make a new binder and variable reference for a term
-mkTmBinderFor :: (Functor m, Fresh m, MonadUnique m)
+mkTmBinderFor :: (Fresh m, MonadUnique m)
               => HashMap TyConName TyCon -- ^ TyCon cache
               -> String -- ^ Name of the new binder
               -> Term -- ^ Term to bind
@@ -203,7 +203,7 @@ mkTmBinderFor tcm name e = do
   return r
 
 -- | Make a new binder and variable reference for either a term or a type
-mkBinderFor :: (Functor m, Monad m, MonadUnique m, Fresh m)
+mkBinderFor :: (Monad m, MonadUnique m, Fresh m)
             => HashMap TyConName TyCon -- ^ TyCon cache
             -> String -- ^ Name of the new binder
             -> Either Term Type -- ^ Type or Term to bind
@@ -217,7 +217,7 @@ mkBinderFor tcm name (Right ty) = do
   return $ Right (TyVar name' (embed kind), VarTy kind name')
 
 -- | Make a new, unique, identifier and corresponding variable reference
-mkInternalVar :: (Functor m, Monad m, MonadUnique m)
+mkInternalVar :: (Monad m, MonadUnique m)
               => String -- ^ Name of the identifier
               -> KindOrType
               -> m (Id,Term)
@@ -459,7 +459,7 @@ isLambdaBodyCtx (LamBody _) = True
 isLambdaBodyCtx _           = False
 
 -- | Make a binder that should not be referenced
-mkWildValBinder :: (Functor m, Monad m, MonadUnique m)
+mkWildValBinder :: (Monad m, MonadUnique m)
                 => Type
                 -> m Id
 mkWildValBinder = fmap fst . mkInternalVar "wild"

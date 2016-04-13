@@ -46,7 +46,7 @@ type Gamma = HashMap TmName Type
 type Delta = HashMap TyName Kind
 
 -- | Determine the type of a term
-termType :: (Functor m, Fresh m)
+termType :: Fresh m
          => HashMap TyConName TyCon
          -> Term
          -> m Type
@@ -166,14 +166,14 @@ mkTyApps :: Term
 mkTyApps = foldl TyApp
 
 -- | Does a term have a function type?
-isFun :: (Functor m, Fresh m)
+isFun :: Fresh m
       => HashMap TyConName TyCon
       -> Term
       -> m Bool
 isFun m t = fmap (isFunTy m) $ (termType m) t
 
 -- | Does a term have a function or polymorphic type?
-isPolyFun :: (Functor m, Fresh m)
+isPolyFun :: Fresh m
           => HashMap TyConName TyCon
           -> Term
           -> m Bool
