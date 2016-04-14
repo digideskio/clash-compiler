@@ -171,7 +171,6 @@ main = do
                                     dflags
                                     [ LangExt.TemplateHaskell
                                     , LangExt.TemplateHaskellQuotes
-                                    , LangExt.Arrows
                                     , LangExt.DataKinds
                                     , LangExt.TypeOperators
                                     , LangExt.FlexibleContexts
@@ -180,6 +179,7 @@ main = do
                                     , LangExt.BinaryLiterals
                                     , LangExt.ExplicitNamespaces
                                     , LangExt.KindSignatures
+                                    , LangExt.DeriveLift
                                     ]
                 dflagsExtra1 = foldl DynFlags.xopt_unset dflagsExtra
                                      [ LangExt.ImplicitPrelude
