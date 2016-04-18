@@ -96,9 +96,28 @@ bindNonRep = inlineBinders nonRepTest
     nonRepTest e (id_@(Id idName tyE), exprE)
       = (&&) <$> (not <$> (representableType <$> Lens.view typeTranslator <*> Lens.view tcCache <*> pure (unembed tyE)))
              <*> ((&&) <$> (notElem idName <$> (Lens.toListOf <$> localFreeIds <*> pure (unembed exprE)))
+                       -- See: [Note] join points and void-wrappers
                        <*> (pure (if isJoinPointIn id_ e then isVoidWrapper (unembed exprE) else True)))
 
     nonRepTest _ _ = return False
+
+{- [Note] bottom-up traversal for liftNonRep
+Join points are functions that only occur in tail-call positions within an
+expression, and only when they occur in a tail-call position more than once.
+
+Normally bindNonRep binds/inlines all non-recursive local functions. However,
+doing so for join points would significantly increase compilation time, so we
+avoid it. The only exception to this rule are so-called void wrappers. Void
+wrappers are functions of the form:
+
+> \(w :: Void) -> f a b c
+
+i.e. a wrapper around the function 'f' where the argument 'w' is not used. We
+do bind/line these join-points because these void-wrappers interfere with the
+'disjoint expression consolidation' (DEC) and 'common sub-expression elimination'
+(CSE) transformation, sometimes resulting in circuits that are twice as big
+as they'd need to be.
+-}
 
 -- | Lift non-representable let-bindings
 liftNonRep :: NormRewrite
