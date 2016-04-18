@@ -96,7 +96,7 @@ bindNonRep = inlineBinders nonRepTest
     nonRepTest e (id_@(Id idName tyE), exprE)
       = (&&) <$> (not <$> (representableType <$> Lens.view typeTranslator <*> Lens.view tcCache <*> pure (unembed tyE)))
              <*> ((&&) <$> (notElem idName <$> (Lens.toListOf <$> localFreeIds <*> pure (unembed exprE)))
-                       <*> (pure (not $ isJoinPointIn id_ e)))
+                       <*> (pure (if isJoinPointIn id_ e then isVoidWrapper (unembed exprE) else True)))
 
     nonRepTest _ _ = return False
 
