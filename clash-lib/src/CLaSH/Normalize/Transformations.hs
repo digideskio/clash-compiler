@@ -96,12 +96,12 @@ bindNonRep = inlineBinders nonRepTest
     nonRepTest e (id_@(Id idName tyE), exprE)
       = (&&) <$> (not <$> (representableType <$> Lens.view typeTranslator <*> Lens.view tcCache <*> pure (unembed tyE)))
              <*> ((&&) <$> (notElem idName <$> (Lens.toListOf <$> localFreeIds <*> pure (unembed exprE)))
-                       -- See: [Note] join points and void-wrappers
+                       -- See: [Note] join points and void wrappers
                        <*> (pure (if isJoinPointIn id_ e then isVoidWrapper (unembed exprE) else True)))
 
     nonRepTest _ _ = return False
 
-{- [Note] bottom-up traversal for liftNonRep
+{- [Note] join points and void wrappers
 Join points are functions that only occur in tail-call positions within an
 expression, and only when they occur in a tail-call position more than once.
 
